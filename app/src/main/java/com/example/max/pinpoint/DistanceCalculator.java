@@ -1,5 +1,7 @@
 package com.example.max.pinpoint;
 
+import android.util.Log;
+
 import com.accent_systems.ibks_sdk.scanner.ASResultParser;
 
 import org.json.JSONException;
@@ -15,6 +17,8 @@ import java.util.Objects;
  */
 
 public class DistanceCalculator {
+
+    private static String TAG = "DistanceCalculator";
 
     // Should always be initial beacons to compare to, not the most recently loaded ones
     List<BeaconData> beacons;
@@ -74,11 +78,11 @@ public class DistanceCalculator {
         // Update values for beacons
         // Set new beacon and advertising data to local variables
         // Check if the beacon was updated
-        for (BeaconData beacon : currentBeacons) {
-            if (Objects.equals(beacon.getResult().getDevice(), beacons.get(index).getResult().getDevice())
+        for (BeaconData beaconInfo : currentBeacons) {
+            if (Objects.equals(beaconInfo.getResult().getDevice(), beacons.get(index).getResult().getDevice())
                 /*&& !Objects.equals(beacon.getResult(), beacons.get(index).getResult())*/) {
                 // If so, set things up
-                beaconA = beacon;
+                beaconA = beaconInfo;
                 // advertBeaconA = ASResultParser.getDataFromAdvertising(beacon.getResult());
 
                 // Add RSSI for current beacon
@@ -86,11 +90,20 @@ public class DistanceCalculator {
             }
         }
 
+        //Log.e(TAG, "getDistance() currentBeacons.size()===>" + currentBeacons.size() + ":::" + values.size());
+
         // Save original values through deep copy
         ArrayList<Integer> originalValues = new ArrayList<>();
+        /* ADD 주석처리.....
         for (int i = 0; i < 20; i++) {
             originalValues.add(0);
         }
+        */
+
+        for (int i = 0; i < values.size(); i++) {
+            originalValues.add(0);
+        }
+
         Collections.copy(originalValues, values);
 
         // Calculate confidence interval and remove outliers

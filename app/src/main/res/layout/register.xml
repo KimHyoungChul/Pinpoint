@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/colorPrimaryDark"
-            android:text="Pinpoint"
+            android:text="BeaconPoint"
             android:textSize="35sp"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="40dp"/>
@@ -102,7 +102,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="30dp"
             android:gravity="center"
-            android:text="Already a member? Login"
+            android:text="로그인하러 가기"
             android:textSize="16dp" />
     </android.support.v7.widget.LinearLayoutCompat>
 </android.support.v4.widget.NestedScrollView>

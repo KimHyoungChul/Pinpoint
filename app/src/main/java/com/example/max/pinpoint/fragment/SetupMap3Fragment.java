@@ -71,7 +71,7 @@ public class SetupMap3Fragment extends Fragment {
         goBack.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 new AlertDialog.Builder(getActivity())
-                        .setMessage("Going back now will remove current progress.\nContinue?")
+                        .setMessage("현재 진행상황이 모두 초기화 됩니다.\n계속진행하시겠습니까?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 // User clicked OK button

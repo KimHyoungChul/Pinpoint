@@ -2,7 +2,9 @@ package com.example.max.pinpoint.fragment;
 
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -20,9 +22,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -50,6 +54,8 @@ import static com.example.max.pinpoint.fragment.SetupMap1Fragment.MAX_WALLS;
  */
 public class HomeFragment extends Fragment implements ASScannerCallback {
 
+    private static String TAG = "HomeFragment";
+
     private OnFragmentInteractionListener mListener;
 
     Bitmap image = null;
@@ -65,6 +71,9 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
     private Bitmap map = null;
     private boolean incompatible = false;
     private boolean full = false;
+
+    private Context mContext;
+    final Handler timerHandler = new Handler();
 
     public HomeFragment() {
         // Required empty public constructor
@@ -93,6 +102,8 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_home, container, false);
+
+        mContext = this.getContext();
 
         Bundle bundle = null;
 
@@ -161,6 +172,29 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
             }
         }
 
+
+        AssetManager am = this.getContext().getAssets();
+        BufferedInputStream buf = null;
+        try {
+
+            buf = new BufferedInputStream(am.open("IMG_0863.jpg"));
+            Bitmap bitmap = BitmapFactory.decodeStream(buf);
+
+            width = bitmap.getWidth();
+            length = bitmap.getHeight();
+
+            Log.e(TAG, "onCreateView()===width,length===>[" + width + ", " + length + "]");
+        } catch(Exception e) {
+            e.printStackTrace();
+        } finally {
+            try{
+                buf.close();
+            } catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
         // Initialize currentBeacons as 4 empty lists
         for (int i = 0; i < MAX_WALLS; i++) {
             currentBeacons.add(new ArrayList<>());
@@ -184,10 +218,37 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                 // Start scanning
                 startScan();
 
+                //TODO 비콘 저장 위치로 수정.
+                //저장된 비콘위치
+                SharedPreferences beconPositions = getActivity().getSharedPreferences("pinpoint", Context.MODE_PRIVATE);
+
+                float beaconW1f = beconPositions.getFloat("beaconW1", 0);
+                float beaconW2f = beconPositions.getFloat("beaconW2", 0);
+                float beaconW3f = beconPositions.getFloat("beaconW3", 0);
+
+                float beaconH1f = beconPositions.getFloat("beaconH1", 0);
+                float beaconH2f = beconPositions.getFloat("beaconH2", 0);
+                float beaconH3f = beconPositions.getFloat("beaconH3", 0);
+
+                double beaconW1 = Double.parseDouble(new Float(beaconW1f).toString());
+                double beaconW2 = Double.parseDouble(new Float(beaconW2f).toString());
+                double beaconW3 = Double.parseDouble(new Float(beaconW3f).toString());
+
+                double beaconH1 = Double.parseDouble(new Float(beaconH1f).toString());
+                double beaconH2 = Double.parseDouble(new Float(beaconH2f).toString());
+                double beaconH3 = Double.parseDouble(new Float(beaconH3f).toString());
+
+                Log.e(TAG, "1 비콘위치===width,length===>[" + beaconW1 + ", " + beaconH1 + "]");
+                Log.e(TAG, "2 비콘위치===width,length===>[" + beaconW2 + ", " + beaconH2 + "]");
+                Log.e(TAG, "3 비콘위치===width,length===>[" + beaconW3 + ", " + beaconH3 + "]");
+
+                double[][] positions = {{beaconW1, beaconH1}, {beaconW2, beaconH2}, {beaconW3, beaconH3}};
+
                 // Scan until new value for each beacon, done on callback
                 // Executes code on a 1 second timer
-                final Handler timerHandler = new Handler();
+                //final Handler timerHandler = new Handler();
                 timerHandler.postDelayed(new Runnable() {
+
                     @Override
                     public void run() {
                         // If incompatible is true, return since the map and beacons don't match
@@ -197,8 +258,12 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                         // Check if there are enough elements in currentBeacons. If not, recurse
                         if (currentBeacons.size() == MAX_WALLS) {
                             // Check that enough scans have been done for all beacons
+                            /*
                             if (currentBeacons.get(0).size() == 20 && currentBeacons.get(1).size() == 20
                                     && currentBeacons.get(2).size() == 20 && currentBeacons.get(3).size() == 20) {
+                            */
+                            if (currentBeacons.get(0).size() >= 20 && currentBeacons.get(1).size() >= 20
+                                    && currentBeacons.get(2).size() >= 20) {
                                 // Set full to true to enable replacement
                                 full = true;
 
@@ -217,7 +282,8 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                                 }
 
                                 // Set positions of each beacon based on stored/displayed order, where (0,0) is the bottom left corner of the map/room
-                                double[][] positions = {{width / 2, 0}, {width, length / 2}, {width / 2, length}, {0, length / 2}};
+                                //double[][] positions = {{width / 2, 0}, {width, length / 2}, {width / 2, length}, {0, length / 2}};
+                                //double[][] positions = {{width / 2, 0}, {width, length / 2}, {width / 2, length}};
 
                                 // Input distance and coordinates to trilateration calc
                                 NonLinearLeastSquaresSolver triSolver = new NonLinearLeastSquaresSolver
@@ -226,6 +292,7 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
 
                                 // Get centroid
                                 location = optimum.getPoint().toArray();
+                                //Log.e(TAG, "location.length===" + location.length + "===width,length===>[" + width + ", " + length + "]");
 
                                 // Location debug
                                 /*
@@ -235,6 +302,7 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                                         .show();
                                 */
 
+                                // 이미지 크기를 벗어나지 않게 하기 위해....
                                 // Prevent locations from exceeding bounds
                                 if (location[0] > width)
                                     location[0] = width;
@@ -255,20 +323,33 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                                         // Set image view
                                         TouchImageView img = (TouchImageView) rootView.findViewById(R.id.mapView);
 
-                                        File f = new File(filepath, "map.jpg");
-                                        Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
+//                                        File f = new File(filepath, "map.jpg");
+//                                        Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
+
+                                        Bitmap b = null;
+
+                                        if(b == null){
+                                            File f = new File(filepath, "map.jpg");
+                                            b = BitmapFactory.decodeStream(new FileInputStream(f));
+                                            img.setImageBitmap(b);
+                                        }
 
                                         // Convert to mutable bitmap to draw on canvas
                                         Bitmap mutableBitmap = b.copy(Bitmap.Config.ARGB_8888, true);
 
                                         // Create paint object
                                         Paint paint = new Paint();
-                                        paint.setColor(Color.parseColor("#80CED7"));
+                                        //paint.setColor(Color.parseColor("#80CED7"));
+                                        paint.setColor(Color.parseColor("#de0711"));
                                         paint.setStyle(Paint.Style.FILL);
 
-                                        float expansion = distanceCalculator.expansionScale(width, length) / 4;
-                                        if (expansion < 1)
-                                            expansion = 1;
+                                        //내위치 포인트 크기
+                                        float expansion = 15;
+//                                        float expansion = distanceCalculator.expansionScale(width, length) / 4;
+//                                        if (expansion < 1)
+//                                            expansion = 20;
+
+                                        //Log.e(TAG, "expansion===" + expansion + "===location[0],location[1]===>[" + location[0] + ", " + location[1] + "]");
 
                                         // Create canvas and draw map and location icon to it
                                         Canvas tempCanvas = new Canvas(mutableBitmap);
@@ -283,7 +364,8 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
 
                                 // If full, recurse after 5 seconds
                                 if (full) {
-                                    timerHandler.postDelayed(this, 5000);
+                                    //timerHandler.postDelayed(this, 5000);
+                                    timerHandler.postDelayed(this, 2000);
                                 }
                                 else {
                                     // Empty the array lists
@@ -402,7 +484,7 @@ public class HomeFragment extends Fragment implements ASScannerCallback {
                 else {
                     // Notify user that map is incompatible
                     new AlertDialog.Builder(getActivity())
-                            .setMessage("The current map and beacon setup is incompatible, please create a new map.")
+                            .setMessage("현재지도와 비콘 설정이 호환되지 않습니다. 새지도를 만드십시오.")
                             .setPositiveButton("Ok", null)
                             .show();
                     // Set incompatible to true to prevent further activity

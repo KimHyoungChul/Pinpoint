@@ -1,5 +1,6 @@
 package com.example.max.pinpoint.fragment;
 
+import android.content.Context;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,8 +30,10 @@ import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.support.v4.content.ContextCompat;
+import android.widget.Toast;
 
 
 import com.accent_systems.ibks_sdk.EDSTService.ASEDSTCallback;
@@ -87,7 +90,8 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
     public static final int REQUEST_CODE_PICK_ACCOUNT = 1000;
     public static final int SCOPE_USERLOCATION = 0;
     public static final int SCOPE_CLOUDPLATFORM = 1;
-    public static final int MAX_WALLS = 4;
+    //public static final int MAX_WALLS = 4;
+    public static final int MAX_WALLS = 3;
 
     private List<String> scannedDevicesList;
     private ArrayAdapter<String> adapter;
@@ -170,6 +174,8 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
         startScan();
         getPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity().getBaseContext());
 
+        //getPrefs = this.getContext().getSharedPreferences("pinpoint", Context.MODE_PRIVATE);
+
         if(getPrefs.getString("clientName", null)!=null){
 
             try{
@@ -193,7 +199,7 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
 
                 // Go back
                 new AlertDialog.Builder(getActivity())
-                        .setMessage("Going back now will remove current progress.\nContinue?")
+                        .setMessage("현재 진행상황이 모두 초기화 됩니다.\n계속진행하시겠습니까?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 // User clicked OK button
@@ -408,9 +414,9 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
                 //Get only the address from the previous string. Substring from '(' to ')'
                 String address = fullString.substring(fullString.indexOf("(")+1, fullString.indexOf(")"));
 
-                Log.i(TAG,"*************************************************");
-                Log.i(TAG, "CONNECTION STARTED TO DEVICE "+address);
-                Log.i(TAG,"*************************************************");
+                Log.e(TAG,"*************************************************");
+                Log.e(TAG, "CONNECTION STARTED TO DEVICE "+address);
+                Log.e(TAG,"*************************************************");
 
                 // Check that the list of active beacons isn't empty
                 if (!activeBeacons.isEmpty())
@@ -445,7 +451,7 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
                                 {
                                     AlertDialog alertDialog = new AlertDialog.Builder(actv).create();
                                     alertDialog.setTitle("Alert");
-                                    alertDialog.setMessage("The maximum number of beacons was reached.\nPlease remove an active beacon before continuing");
+                                    alertDialog.setMessage("비콘은 최대 3개만 등록할 수 있습니다.");
                                     alertDialog.setButton(AlertDialog.BUTTON_NEUTRAL, "OK",
                                             new DialogInterface.OnClickListener() {
                                                 public void onClick(DialogInterface dialog, int which) {
@@ -466,12 +472,102 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
                                     // Set the highlighting on the list view item
                                     parent.getChildAt(position).setBackgroundColor(Color.parseColor("#80CED7"));
 
+                                    //버튼활성화 위치 이동 Dialog 안으로....
                                     // Allow navigation to the next step if the number of required beacons is reached
+                                    /*
                                     if (numBeacons == MAX_WALLS)
                                     {
                                         Button continueButton = (Button) getView().findViewById(R.id.continueButton);
                                         continueButton.setVisibility(View.VISIBLE);
                                     }
+                                    */
+
+
+                                    //TODO 비콘을 선택하면 위치를 등록 할 수 있게한다.
+                                    View dialogView = actv.getLayoutInflater().inflate(R.layout.dialog_becon_point, null);
+                                    final EditText nameEditText = (EditText)dialogView.findViewById(R.id.name);
+                                    final EditText NicknameEditText = (EditText)dialogView.findViewById(R.id.nickname);
+
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(actv);
+                                    builder.setView(dialogView);
+
+                                    builder.setPositiveButton("OK", new DialogInterface.OnClickListener(){
+                                        public void onClick(DialogInterface dialog, int pos)
+                                        {
+                                            String width = nameEditText.getText().toString();
+                                            String height = NicknameEditText.getText().toString();
+
+                                            SharedPreferences settings = actv.getApplicationContext().getSharedPreferences("pinpoint", Context.MODE_PRIVATE);
+                                            SharedPreferences.Editor editor = settings.edit();
+
+                                            //SharedPreferences.Editor editor = getPrefs.edit();
+
+                                            Log.e(TAG,"########## numBeacons==>" + numBeacons);
+
+                                            float widthF = Float.valueOf(width);
+                                            Log.e(TAG,"\"########## beaconW1 widthF==>" + widthF);
+
+                                            float heightF = Float.valueOf(height);
+                                            Log.e(TAG,"\"########## beaconW1 heightF==>" + heightF);
+
+                                            if(numBeacons == 1){
+                                                Log.e(TAG,"\"########## beaconW1==>" + width);
+
+                                                editor.putString("beaconNm1", String.valueOf(numBeacons)); //beacon name
+                                                //editor.putString("beaconW1", width); //beacon 가로 위치
+                                                //editor.putString("beaconH1", height); //beacon 세로 위치
+
+                                                editor.putFloat("beaconW1", widthF);
+                                                editor.putFloat("beaconH1", heightF);
+
+                                                // Commit shared preferences
+                                                editor.commit();
+                                            } else if(numBeacons == 2){
+                                                Log.e(TAG,"\"########## beaconW2==>" + width);
+
+                                                editor.putString("beaconNm2", String.valueOf(numBeacons)); //beacon name
+                                                //editor.putString("beaconW2", width); //beacon 가로 위치
+                                                //editor.putString("beaconH2", height); //beacon 세로 위치
+
+                                                editor.putFloat("beaconW2", widthF);
+                                                editor.putFloat("beaconH2", heightF);
+
+                                                // Commit shared preferences
+                                                editor.commit();
+                                            } else if(numBeacons == 3){
+                                                Log.e(TAG,"\"########## beaconW3==>" + width);
+
+                                                editor.putString("beaconNm3", String.valueOf(numBeacons)); //beacon name
+                                                //editor.putString("beaconW3", width); //beacon 가로 위치
+                                                //editor.putString("beaconH3", height); //beacon 세로 위치
+
+                                                editor.putFloat("beaconW3", widthF);
+                                                editor.putFloat("beaconH3", heightF);
+
+                                                // Commit shared preferences
+                                                editor.commit();
+                                            }
+
+                                            //Toast.makeText(actv.getApplicationContext(),"가로 : " + width + "\n" + "세로 : " + height, Toast.LENGTH_LONG).show();
+
+                                            if (numBeacons == MAX_WALLS)
+                                            {
+                                                Button continueButton = (Button) getView().findViewById(R.id.continueButton);
+                                                continueButton.setVisibility(View.VISIBLE);
+                                            }
+                                        }
+                                    });
+
+                                    builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+                                        public void onClick(DialogInterface dialog, int pos)
+                                        {
+                                            beacon.setSelected(false);
+                                            --numBeacons;
+                                        }
+                                    });
+
+                                    AlertDialog alertDialog = builder.create();
+                                    alertDialog.show();
                                 }
                             }
                         }
@@ -526,7 +622,63 @@ public class SetupMap1Fragment extends Fragment implements BackPressObserver, AS
         JSONObject advData;
         switch (ASResultParser.getAdvertisingType(result)){
             case ASUtils.TYPE_IBEACON:
-                Log.i(TAG,result.getDevice().getName()+" - iBEACON - "+logstr);
+
+                //MiniBeacon
+                if(result.getDevice().getName() != null && result.getDevice().getName().startsWith("MiniBeacon")){
+                    //Log.e(TAG,result.getDevice().getName()+" - iBEACON - "+logstr);
+
+                    /**** Example to get data from advertising ***
+                     advData = ASResultParser.getDataFromAdvertising(result);
+                     try {
+                     Log.i(TAG, "FrameType = " +advData.getString("FrameType")+" AdvTxPower = "+advData.getString("AdvTxPower")+" Namespace = "+advData.getString("Namespace")+" Instance = "+advData.getString("Instance"));
+                     }catch (Exception ex){
+                     Log.i(TAG,"Error parsing JSON");
+                     }
+                     /*******************************************/
+                    // Check if scanned device is already in the list by mac address
+                    boolean contains = false;
+
+                    for(int i = 0; i < scannedDevicesList.size(); i++){
+                        if(scannedDevicesList.get(i).contains(result.getDevice().getAddress())){
+                            // Device already added
+                            contains = true;
+                            // Replace the device with updated values in that position
+                            scannedDevicesList.set(i, result.getRssi()+"  "+result.getDevice().getName()+ "\n       ("+result.getDevice().getAddress()+")");
+                            break;
+                        }
+                    }
+
+                    //Log.e(TAG," - contains :-> "+contains);
+
+                    if(!contains){
+
+                        //Log.e(TAG," - result.getScanRecord().getServiceUuids( :-> "+result.getScanRecord().getServiceUuids());
+
+                        // Check if the device contains a UID, if it does, add it
+                        //if (result.getScanRecord().getServiceUuids() != null)
+                        if (result.getDevice().getAddress() != null)
+                        {
+                            //Log.e(TAG,result.getRssi()+"  "+result.getDevice().getName()+ "\n       ("+result.getDevice().getAddress()+")");
+                            // Scanned device not found in the list. NEW => add to list
+                            scannedDevicesList.add(result.getRssi()+"  "+result.getDevice().getName()+ "\n       ("+result.getDevice().getAddress()+")");
+                            // Devices are only added to the activeBeacons list once
+                            activeBeacons.add(new BeaconData(result));
+                        }
+                    }
+
+                    // After modify the list, notify the adapter that changes have been made so it updates the UI.
+                    // UI changes must be done in the main thread
+                    if (isAdded())
+                    {
+                        getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                adapter.notifyDataSetChanged();
+                            }
+                        });
+                    }
+                }
+
                 break;
             // Only do things with data IF the device is of type Eddystone UID
             case ASUtils.TYPE_EDDYSTONE_UID:

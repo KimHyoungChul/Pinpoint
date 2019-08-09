@@ -16,24 +16,32 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:largeHeap="true">
+        <!--
         <activity
             android:name=".LoginActivity"
-            android:label="Pinpoint">
+            android:label="BeaconPoint">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        -->
         <activity
             android:name=".RegisterActivity"
             android:label="Register New Account"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".HomeActivity"
-            android:label="Home"
+            android:label="BeaconPoint"
             android:theme="@style/AppTheme"
-            android:configChanges="orientation" />
+            android:configChanges="orientation" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".AboutUsActivity"
             android:label="@string/title_activity_about_us"

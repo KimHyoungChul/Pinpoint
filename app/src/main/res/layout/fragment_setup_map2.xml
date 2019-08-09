@@ -40,7 +40,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_above="@id/buttonLayout"
-            android:text="Scan"
+            android:text="비콘 적용"
             android:textSize="42sp"
             />
 

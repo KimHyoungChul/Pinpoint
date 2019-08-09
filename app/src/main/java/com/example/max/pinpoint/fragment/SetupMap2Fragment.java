@@ -4,7 +4,11 @@ package com.example.max.pinpoint.fragment;
 import android.app.ProgressDialog;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.AssetManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -25,6 +29,8 @@ import com.example.max.pinpoint.BeaconData;
 import com.example.max.pinpoint.DistanceCalculator;
 import com.example.max.pinpoint.R;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -40,6 +46,9 @@ import static com.example.max.pinpoint.fragment.SetupMap1Fragment.MAX_WALLS;
  * create an instance of this fragment.
  */
 public class SetupMap2Fragment extends Fragment implements BackPressObserver, ASScannerCallback {
+
+    private static String TAG = "SetupMap2Fragment";
+
     private OnFragmentInteractionListener mListener;
     private ArrayList<BeaconData> beacons = new ArrayList<BeaconData>();
     private ArrayList<ArrayList<BeaconData>> currentBeacons = new ArrayList<ArrayList<BeaconData>>();
@@ -51,6 +60,9 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
     private double wall3 = 0;
     private double avgLength;
     private double avgWidth;
+
+
+    private Context mContext;
 
     public SetupMap2Fragment() {
         // Required empty public constructor
@@ -87,21 +99,28 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.fragment_setup_map2, container, false);
 
+        mContext = this.getContext();
+
         // Gets selected beacons
         Bundle bundle = this.getArguments();
         if (bundle != null) {
             for(int i = 0; i < MAX_WALLS; ++i) {
                 BeaconData beacon = bundle.getParcelable("beacon" + Integer.toString(i + 1));
+
+                Log.e(TAG, "onCreateView()  beacon.getResult().getDevice()====>" + beacon.getResult().getDevice() + "======["+i+"]=====");
+
                 // Store them for use
                 beacons.add(beacon);
             }
             String msg = "";
             for (int i = 0; i < MAX_WALLS; ++i) {
                 msg = msg + beacons.get(i).getResult().getScanRecord().getDeviceName() + " ";
+
+                Log.e(TAG, "onCreateView()  msg====>" + msg);
             }
 
             new AlertDialog.Builder(getActivity())
-                    .setMessage("The beacon order is: " + msg)
+                    .setMessage("선택한 비콘: " + msg)
                     .setPositiveButton("Ok", null)
                     .show();
         }
@@ -115,7 +134,7 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
         goBack.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 new AlertDialog.Builder(getActivity())
-                        .setMessage("Going back now will remove current progress.\nContinue?")
+                        .setMessage("현재 진행상황이 모두 초기화 됩니다.\n계속진행하시겠습니까?")
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 // User clicked OK button
@@ -145,6 +164,9 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
                 args.putDouble("length", avgLength);
                 args.putDouble("width", avgWidth);
 
+                Log.e(TAG,"MapFinishedFragment 이동 avgLength==>" + avgLength);
+                Log.e(TAG,"MapFinishedFragment 이동 avgWidth==>" + avgWidth);
+
                 // Add the beacons to the bundle
                 for (int i = 0; i < MAX_WALLS; ++i)
                 {
@@ -160,8 +182,8 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
 
         // Setup progress dialog
         ProgressDialog pd = new ProgressDialog(getActivity());
-        pd.setMessage("Scanning for beacons...");
-        pd.setTitle("Scanning");
+        pd.setMessage("선택한 비콘 적용중입니다...");
+        pd.setTitle("적용중");
         pd.setCancelable(false);
 
         // Create thread to handle showing and hiding the loading icon
@@ -194,11 +216,24 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
                 timerHandler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
+
+
+                        Log.e(TAG, "Handler timerHandler currentBeacons.size()===>" + currentBeacons.size());
+
                         // Check if there are enough elements in currentBeacons. If not, alert the user.
                         if (currentBeacons.size() == MAX_WALLS) {
                             // Check that enough scans have been made for all beacons
+                            /*
                             if (currentBeacons.get(0).size() == 20 && currentBeacons.get(1).size() == 20
                                     && currentBeacons.get(2).size() == 20 && currentBeacons.get(3).size() == 20) {
+                            */
+
+                            //Log.e(TAG, "Handler timerHandler currentBeacons.get(0).size()===>" + currentBeacons.get(0).size());
+                            //Log.e(TAG, "Handler timerHandler currentBeacons.get(1).size()===>" + currentBeacons.get(1).size());
+                            //Log.e(TAG, "Handler timerHandler currentBeacons.get(2).size()===>" + currentBeacons.get(2).size());
+
+                            if (currentBeacons.get(0).size() >= 20 && currentBeacons.get(1).size() >= 20
+                                    && currentBeacons.get(2).size() >= 20) {
                                 // Stop Scanning
                                 ASBleScanner.stopScan();
 
@@ -206,35 +241,53 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
                                 DistanceCalculator distanceCalculator = new DistanceCalculator(beacons);
 
                                 if (timesScanned < MAX_WALLS) {
+                                    Log.e(TAG, "Handler timerHandler timesScanned===>" + timesScanned + ":::" + currentBeacons.size());
+
+                                    Log.e(TAG, "Handler timerHandler currentBeacons.get().size()===>" + currentBeacons.get(0).size() +", "+ currentBeacons.get(1).size() +", "+ currentBeacons.get(2).size());
+
                                     switch (timesScanned) {
                                         case 0:
+                                            Log.e(TAG, "Handler timerHandler currentBeacons.get(0).size()===>" + currentBeacons.get(0).size());
+
                                             // Get distance to first and second
                                             wall0 = wall0 + distanceCalculator.getDistance(0, currentBeacons.get(0));
                                             wall1 = wall1 + distanceCalculator.getDistance(1, currentBeacons.get(1));
                                             ++timesScanned;
+                                            /*
                                             // Empty the array lists
                                             for (ArrayList<BeaconData> list : currentBeacons) {
                                                 list.clear();
                                             }
                                             // Hide loading icon
                                             handler.post(hideLoadingIcon);
+                                            */
+                                            timerHandler.postDelayed(this, 1000);
                                             break;
                                         case 1:
+                                            Log.e(TAG, "Handler timerHandler currentBeacons.get(1).size()===>" + currentBeacons.get(1).size());
+
                                             // Get distance to second and third
                                             wall1 = wall1 + distanceCalculator.getDistance(1, currentBeacons.get(1));
                                             wall2 = wall2 + distanceCalculator.getDistance(2, currentBeacons.get(2));
                                             ++timesScanned;
+                                            /*
                                             // Empty the array lists
                                             for (ArrayList<BeaconData> list : currentBeacons) {
                                                 list.clear();
                                             }
                                             // Hide loading icon
                                             handler.post(hideLoadingIcon);
+                                            */
+
+                                            timerHandler.postDelayed(this, 1000);
                                             break;
                                         case 2:
+                                            Log.e(TAG, "Handler timerHandler currentBeacons.get(2).size()===>" + currentBeacons.get(2).size());
+
                                             // Get distance to third and fourth
                                             wall2 = wall2 + distanceCalculator.getDistance(2, currentBeacons.get(2));
-                                            wall3 = wall3 + distanceCalculator.getDistance(3, currentBeacons.get(3));
+                                            //wall3 = wall3 + distanceCalculator.getDistance(3, currentBeacons.get(3));
+                                            wall0 = wall0 + distanceCalculator.getDistance(0, currentBeacons.get(0));
                                             ++timesScanned;
                                             // Empty the array lists
                                             for (ArrayList<BeaconData> list : currentBeacons) {
@@ -260,11 +313,37 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
                                     ASBleScanner.stopScan();
                                 }
 
+
+
                                 if (timesScanned == MAX_WALLS) {
+                                    Log.e(TAG, "Handler timerHandler timesScanned == MAX_WALLS : " + timesScanned);
+
                                     // Hard coded for rectangular rooms
                                     // Set averages for opposite walls
-                                    avgWidth = (wall0 + wall2) / 2;
-                                    avgLength = (wall1 + wall3) / 2;
+//                                    avgWidth = (wall0 + wall2) / 2;
+//                                    avgLength = (wall1 + wall3) / 2;
+
+
+                                    //맵사이즈로 변경.
+                                    AssetManager am = mContext.getAssets();
+                                    BufferedInputStream buf = null;
+                                    try {
+
+                                        buf = new BufferedInputStream(am.open("IMG_0863.jpg"));
+                                        Bitmap bitmap = BitmapFactory.decodeStream(buf);
+
+                                        avgWidth = bitmap.getWidth();
+                                        avgLength = bitmap.getHeight();
+                                    } catch(Exception e) {
+                                        e.printStackTrace();
+                                    } finally {
+                                        try{
+                                            buf.close();
+                                        } catch(IOException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+
                                     // Show continue button
                                     Button continueButton = (Button) getView().findViewById(R.id.continueButton);
                                     if (continueButton.getVisibility() == View.INVISIBLE) {
@@ -301,15 +380,38 @@ public class SetupMap2Fragment extends Fragment implements BackPressObserver, AS
     //Callback from ASBleScanner
     public void scannedBleDevices(ScanResult result)
     {
-        Log.d("Debug", "Scanned result");
+        Log.d(TAG, "Scanned result");
         // Loop through the selected beacons
         // Store result in beacons, IF the results refer to the same device
         for (int i = 0; i < MAX_WALLS; ++i) {
+
+
             if (Objects.equals(result.getDevice(), beacons.get(i).getResult().getDevice())) {
+                //Log.e(TAG, "Scanned result result.getDevice()====>" + result.getDevice() + "======["+i+"]=====" + beacons.get(i).getResult().getDevice() + "=====" +currentBeacons.get(i).isEmpty());
+
+
                 // List is empty, add to a list equivalent in index to selected beacons
-                if (currentBeacons.get(i).isEmpty()) {
-                    currentBeacons.get(i).add(new BeaconData(result));
-                    break;
+                //if (currentBeacons.get(i).isEmpty()) {
+                if (currentBeacons.get(i) != null) {
+
+
+                    if (currentBeacons.get(i).size() > 20) {
+                        //Log.e(TAG, "Scanned result : currentBeacons.get("+i+").add    size() > 20");
+                        break;
+                    } else {
+                        //Log.d(TAG, "Scanned result : currentBeacons.get("+i+").add");
+                        currentBeacons.get(i).add(new BeaconData(result));
+                        break;
+                    }
+                    //ADD khch
+//                    if(i == 2){
+//                        Log.d(TAG, "Scanned result : currentBeacons.get("+i+").add  Break");
+//
+//                        //ASBleScanner.stopScan();
+//                        break;
+//                    }
+
+                    //break;
                 }
 
                 if (Objects.equals(currentBeacons.get(i).get(0).getResult().getDevice(), result.getDevice())) {
